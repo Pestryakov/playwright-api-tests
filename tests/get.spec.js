@@ -1,16 +1,32 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * Безопасный парсинг JSON.
+ * Возвращает null, если ответ не JSON или статус ошибки.
+ */
 async function safeJson(response) {
-  // Попытка безопасно распарсить JSON
-  const text = await response.text();
   try {
-    return JSON.parse(text);
+    if (response.status() >= 400) {
+      console.warn(`⚠️ HTTP Error ${response.status()}:`, await response.text());
+      return null;
+    }
+
+    const contentType = response.headers()['content-type'] || '';
+    if (!contentType.includes('application/json')) {
+      console.warn('⚠️ Response is not JSON:', await response.text());
+      return null;
+    }
+
+    return await response.json();
   } catch (err) {
-    console.warn('Response is not valid JSON:', text);
+    console.warn('⚠️ Failed to parse JSON:', err);
     return null;
   }
 }
 
+// -------------------------
+// GET /products — список продуктов
+// -------------------------
 test('GET /products — list of products', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products');
   expect(response.status()).toBe(200);
@@ -26,6 +42,9 @@ test('GET /products — list of products', async ({ request }) => {
   expect(body[0]).toHaveProperty('price');
 });
 
+// -------------------------
+// GET /products/{id} — существующий продукт
+// -------------------------
 test('GET /products/{id} — valid product', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products/11');
   expect(response.status()).toBe(200);
@@ -37,6 +56,9 @@ test('GET /products/{id} — valid product', async ({ request }) => {
   expect(product).toHaveProperty('price');
 });
 
+// -------------------------
+// GET /products/{id} — несуществующий продукт
+// -------------------------
 test('GET /products/{id} — non-existent product', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products/9999');
   expect([200, 404]).toContain(response.status());
@@ -45,6 +67,9 @@ test('GET /products/{id} — non-existent product', async ({ request }) => {
   if (product) console.log('Non-existent product JSON:', product);
 });
 
+// -------------------------
+// GET /products/category/electronics
+// -------------------------
 test('GET /products/category/electronics', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products/category/electronics');
   expect(response.status()).toBe(200);
@@ -54,6 +79,9 @@ test('GET /products/category/electronics', async ({ request }) => {
   expect(products.every((p) => p.category === 'electronics')).toBeTruthy();
 });
 
+// -------------------------
+// GET /products?limit=5
+// -------------------------
 test('GET /products?limit=5', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products?limit=5');
   expect(response.status()).toBe(200);
@@ -63,6 +91,9 @@ test('GET /products?limit=5', async ({ request }) => {
   expect(products.length).toBeLessThanOrEqual(5);
 });
 
+// -------------------------
+// GET /products — проверка полей и типов
+// -------------------------
 test('GET /products — fields and types', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products');
   expect(response.status()).toBe(200);
@@ -78,6 +109,9 @@ test('GET /products — fields and types', async ({ request }) => {
   }
 });
 
+// -------------------------
+// GET /products/{id} — отрицательный ID
+// -------------------------
 test('GET /products/{id} — negative ID', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products/-1');
   expect([200, 404]).toContain(response.status());
@@ -86,6 +120,9 @@ test('GET /products/{id} — negative ID', async ({ request }) => {
   if (product) console.log('Negative ID product:', product);
 });
 
+// -------------------------
+// GET /products/{id} — ID = 0
+// -------------------------
 test('GET /products/{id} — ID = 0', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products/0');
   expect([200, 404]).toContain(response.status());
@@ -94,20 +131,29 @@ test('GET /products/{id} — ID = 0', async ({ request }) => {
   if (product) console.log('ID=0 product:', product);
 });
 
+// -------------------------
+// GET /products?limit=1000
+// -------------------------
 test('GET /products?limit=1000', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products?limit=1000');
   expect(response.status()).toBe(200);
 
   const products = await safeJson(response);
   expect(products).not.toBeNull();
-  expect(products.length).toBeLessThanOrEqual(20);
+  expect(products.length).toBeLessThanOrEqual(20); // FakeStoreAPI всего 20 продуктов
 });
 
+// -------------------------
+// GET /wrong-url — ошибка 404
+// -------------------------
 test('GET /wrong-url — should return 404', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/wrong-url');
   expect(response.status()).toBe(404);
 });
 
+// -------------------------
+// GET /products — multiple requests (idempotency)
+// -------------------------
 test('GET /products — multiple requests (idempotency)', async ({ request }) => {
   const response1 = await request.get('https://fakestoreapi.com/products');
   const response2 = await request.get('https://fakestoreapi.com/products');
@@ -117,6 +163,5 @@ test('GET /products — multiple requests (idempotency)', async ({ request }) =>
 
   expect(products1).not.toBeNull();
   expect(products2).not.toBeNull();
-
-  expect(products1).toEqual(products2);
+  expect(products1).toEqual(products2); // Проверка идемпотентности
 });
