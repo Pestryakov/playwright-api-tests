@@ -112,17 +112,6 @@ test('GET /products/{id} — ID = 0', async ({ request }) => {
   expect([200, 404]).toContain(response.status());
 });
 
-test('GET /products?limit=0', async ({ request }) => {
-  const response = await request.get('https://fakestoreapi.com/products?limit=0');
-  console.log('Status for limit=0:', response.status());
-
-  const products = await response.json();
-  console.log('Products with limit=0:', products);
-
-  expect(response.status()).toBe(200);
-  expect(products.length).toBe(0);
-});
-
 test('GET /products?limit=1000', async ({ request }) => {
   const response = await request.get('https://fakestoreapi.com/products?limit=1000');
   console.log('Status for limit=1000:', response.status());

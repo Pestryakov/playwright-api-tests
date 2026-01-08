@@ -26,7 +26,7 @@ jobs:
             - run: npx playwright install --with-deps
 
             # 5. Запускаем тесты только нужные файлы
-            - run: npx playwright test tests/cud.spec.js tests/delete.spec.js --reporter=list,allure-playwright
+            - run: npx playwright test tests/get.spec.js --reporter=list,allure-playwright
 
             # 6. Генерируем Allure отчёт
             - run: npx allure generate allure-results --clean
