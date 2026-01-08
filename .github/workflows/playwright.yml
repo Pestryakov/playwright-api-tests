@@ -32,7 +32,7 @@ jobs:
             - run: npx allure generate allure-results --clean
 
             # 7️⃣ Загружаем отчёт как артефакт Actions
-            - uses: actions/upload-artifact@v3
+            - uses: actions/upload-artifact@v4
               with:
                   name: allure-report
                   path: allure-report/
