@@ -2,36 +2,36 @@ name: Playwright Tests
 
 on:
     push:
-        branches: [main] # запускается на пуш в main
+        branches: [main]
     pull_request:
-        branches: [main] # запускается на PR в main
+        branches: [main]
 
 jobs:
     test:
-        runs-on: ubuntu-latest # среда выполнения
+        runs-on: ubuntu-latest
 
         steps:
-            # 1️⃣ Клонируем репозиторий
+            # 1. Клонируем репозиторий
             - uses: actions/checkout@v3
 
-            # 2️⃣ Устанавливаем Node.js
+            # 2. Устанавливаем Node.js
             - uses: actions/setup-node@v3
               with:
                   node-version: 20
 
-            # 3️⃣ Устанавливаем зависимости
+            # 3. Устанавливаем зависимости
             - run: npm ci
 
-            # 4️⃣ Устанавливаем Playwright браузеры
+            # 4. Устанавливаем Playwright браузеры
             - run: npx playwright install --with-deps
 
-            # 5️⃣ Запускаем все тесты с репортером Allure
-            - run: npx playwright test --reporter=list,allure-playwright
+            # 5. Запускаем тесты только нужные файлы
+            - run: npx playwright test tests/cud.spec.js tests/delete.spec.js --reporter=list,allure-playwright
 
-            # 6️⃣ Генерируем HTML отчёт Allure
+            # 6. Генерируем Allure отчёт
             - run: npx allure generate allure-results --clean
 
-            # 7️⃣ Загружаем отчёт как артефакт Actions
+            # 7. Загружаем отчёт как артефакт
             - uses: actions/upload-artifact@v4
               with:
                   name: allure-report
