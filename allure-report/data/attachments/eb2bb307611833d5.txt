@@ -1,0 +1,3 @@
+Status for non-existent product: 200
+Response body (raw): 
+No body returned for non-existent product
